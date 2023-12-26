@@ -38,7 +38,7 @@ class HUD(pygame.sprite.Sprite):
 
     def blit_text(self):
         font = pygame.font.Font('freesansbold.ttf', 24)
-        self.text = ["Move with arrowkeys or WASD", "Press R to restart", "ESC to quit", "", f"Highscore: {player.highscore}", f"Score: {player.score}"]
+        self.text = ["Move with arrowkeys or WASD", "Press R to restart", "ESC to quit", "", f"Highscore: {player.highscore:0.0f}", f"Score: {player.score:0.0f}"]
         y = 0
         for line in self.text:
             surf = font.render(line, True, BLACK)
@@ -95,14 +95,17 @@ class Coin(pygame.sprite.Sprite):
         self.rect = self.surf.get_rect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
 
     def place(self):
-        margin = 100
+        margin = 25
         x = random.randint(margin, SCREEN_WIDTH - margin)
         y = random.randint(margin, SCREEN_HEIGHT - margin) 
         self.rect.center = (x, y)
+        r = x * 255 / SCREEN_WIDTH
+        g = (SCREEN_WIDTH - x) * 255 / SCREEN_WIDTH
+        pygame.draw.circle(self.surf, (r, g, 0), (10, 10), 10)
 
     def collect(self):
         if player.alive:
-            player.score += 10
+            player.score += self.rect.centerx * 20 / SCREEN_WIDTH
             self.place()
             # print(f"Player Score: {player.score}")
 
@@ -134,8 +137,8 @@ def reset():
         entity.kill()
     coin.rect.center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
     player.revive()
-    pygame.time.set_timer(ADDENEMY, 250)
-
+    pygame.draw.circle(coin.surf, GOLD, (10, 10), 10)
+    pygame.time.set_timer(ADDENEMY, difficulty)
 
 # Initialize pygame
 pygame.init()
@@ -149,7 +152,8 @@ pygame.display.set_caption('Block Dodge')
 
 # Create a custom event for adding a new enemy
 ADDENEMY = pygame.USEREVENT + 1
-pygame.time.set_timer(ADDENEMY, 250)
+difficulty = 1000
+pygame.time.set_timer(ADDENEMY, difficulty)
 
 # Instantiate player. Right now, this is just a rectangle.
 player = Player()
@@ -204,6 +208,8 @@ while running:
 
     if pygame.sprite.collide_rect(player, coin):
         coin.collect()
+        if difficulty > 100: difficulty -= 25
+        pygame.time.set_timer(ADDENEMY, difficulty)
 
     # Draw all sprites
     for entity in all_sprites:
