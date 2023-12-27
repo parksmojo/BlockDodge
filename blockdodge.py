@@ -1,8 +1,5 @@
 # Import the pygame module
-import pygame
-
-# random
-import random
+import pygame, random, time
 
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
@@ -38,8 +35,11 @@ class HUD(pygame.sprite.Sprite):
 
     def blit_text(self):
         font = pygame.font.Font('freesansbold.ttf', 24)
-        self.text = ["Move with arrowkeys or WASD", "Press R to restart", "ESC to quit", "", f"Highscore: {player.highscore:0.0f}", f"Score: {player.score:0.0f}"]
-        y = 0
+        if player.alive: player.display_time = int(time.time() - player.life_start)
+        self.text = [f"Time: {player.display_time}", f"Highscore: {player.highscore:0.0f}", f"Score: {player.score:0.0f}"]
+        if time.time() - start_time < 15:
+            self.text.extend(["","Move with arrowkeys or WASD", "Press R to restart", "ESC to quit"])
+        y = 5
         for line in self.text:
             surf = font.render(line, True, BLACK)
             screen.blit(surf, (0, y))
@@ -58,11 +58,14 @@ class Player(pygame.sprite.Sprite):
         self.alive: bool = True
         self.score = 0
         self.highscore = 0
+        self.life_start = time.time()
+        self.display_time = 0
 
     def dies(self):
         self.alive = False
         self.surf.fill(DEAD_COLOR)
     def revive(self):
+        self.life_start = time.time()
         self.alive = True
         if self.score > self.highscore:
             self.highscore = self.score
@@ -94,18 +97,19 @@ class Coin(pygame.sprite.Sprite):
         pygame.draw.circle(self.surf, GOLD, (10, 10), 10)
         self.rect = self.surf.get_rect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
 
-    def place(self):
+    def place(self, x = 0, y = 0):
         margin = 25
-        x = random.randint(margin, SCREEN_WIDTH - margin)
-        y = random.randint(margin, SCREEN_HEIGHT - margin) 
+        if x == 0: x = random.randint(margin, SCREEN_WIDTH - margin)
+        if y == 0: y = random.randint(margin, SCREEN_HEIGHT - margin) 
+        size = (x / 40) + 10
+        self.surf = pygame.transform.scale(self.surf, (size, size))
+        self.surf.fill(WHITE)
         self.rect.center = (x, y)
-        r = x * 255 / SCREEN_WIDTH
-        g = (SCREEN_WIDTH - x) * 255 / SCREEN_WIDTH
-        pygame.draw.circle(self.surf, (r, g, 0), (10, 10), 10)
+        pygame.draw.circle(self.surf, GOLD, (size / 2, size / 2), size / 2)
 
     def collect(self):
         if player.alive:
-            player.score += self.rect.centerx * 20 / SCREEN_WIDTH
+            player.score += self.rect.centerx * 25 / SCREEN_WIDTH
             self.place()
             # print(f"Player Score: {player.score}")
 
@@ -135,15 +139,14 @@ class Enemy(pygame.sprite.Sprite):
 def reset():
     for entity in enemies:
         entity.kill()
-    coin.rect.center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
     player.revive()
-    pygame.draw.circle(coin.surf, GOLD, (10, 10), 10)
-    pygame.time.set_timer(ADDENEMY, difficulty)
+    coin.place(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+    pygame.time.set_timer(ADDENEMY, 1000)
 
 # Initialize pygame
 pygame.init()
-# Setup the clock for a decent framerate
 clock = pygame.time.Clock()
+start_time = time.time()
 
 # Create the screen object
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
@@ -180,6 +183,7 @@ while running:
                 running = False
             if event.key == K_r:
                 reset()
+                difficulty = 1000
         # Check for QUIT event. If QUIT, then set running to false.
         elif event.type == QUIT:
             running = False
@@ -200,6 +204,7 @@ while running:
 
     # Fill the screen with white
     screen.fill((255, 255, 255))
+    hud.blit_text()
 
     # Check if any enemies have collided with the player
     if pygame.sprite.spritecollideany(player, enemies):
@@ -207,15 +212,16 @@ while running:
         pygame.time.set_timer(ADDENEMY, 0)
 
     if pygame.sprite.collide_rect(player, coin):
-        coin.collect()
-        if difficulty > 100: difficulty -= 25
-        pygame.time.set_timer(ADDENEMY, difficulty)
+        if player.alive:
+            coin.collect()
+            if difficulty > 100: difficulty = 1015 - player.score
+            pygame.time.set_timer(ADDENEMY, int(difficulty))
+            # print(f"Player Score: {player.score}, difficulty: {difficulty}, time: {time.time() - start_time}")
+
 
     # Draw all sprites
     for entity in all_sprites:
         screen.blit(entity.surf, entity.rect)
-
-    hud.blit_text()
 
     # Update the display
     pygame.display.flip()
