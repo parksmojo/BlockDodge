@@ -3,20 +3,7 @@ import pygame, random, time
 
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
-from pygame.locals import (
-    K_UP,
-    K_DOWN,
-    K_LEFT,
-    K_RIGHT,
-    K_ESCAPE,
-    KEYDOWN,
-    QUIT,
-    K_r,
-    K_w,
-    K_a,
-    K_s,
-    K_d,
-)
+from pygame.locals import *
 from pygame.sprite import Group
 
 # Define constants for the screen width and height
@@ -51,8 +38,10 @@ class HUD(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.surf = pygame.Surface((25, 25))
-        self.surf.fill(LIVE_COLOR)
+        self.surf = pygame.image.load(".\Resources\jet.png").convert()
+        self.surf = pygame.transform.flip(self.surf, True, False)
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
+        self.surf = pygame.transform.scale(self.surf, (66,25))
         self.rect = self.surf.get_rect(center = (25, SCREEN_HEIGHT/2))
         self.speed = 5
         self.alive: bool = True
@@ -63,14 +52,19 @@ class Player(pygame.sprite.Sprite):
 
     def dies(self):
         self.alive = False
-        self.surf.fill(DEAD_COLOR)
+        self.surf = pygame.image.load(".\Resources\explosion.png").convert()
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
+        self.surf = pygame.transform.scale(self.surf, (50,50))
     def revive(self):
         self.life_start = time.time()
         self.alive = True
         if self.score > self.highscore:
             self.highscore = self.score
         self.score = 0
-        self.surf.fill(LIVE_COLOR)
+        self.surf = pygame.image.load(".\Resources\jet.png").convert()
+        self.surf = pygame.transform.flip(self.surf, True, False)
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
+        self.surf = pygame.transform.scale(self.surf, (66,25))
         self.rect.center = (25, SCREEN_HEIGHT/2)
 
     # Move the sprite based on user keypresses
@@ -92,9 +86,9 @@ class Player(pygame.sprite.Sprite):
 class Coin(pygame.sprite.Sprite):
     def __init__(self):
         super(Coin, self).__init__()
-        self.surf = pygame.Surface((20, 20))
-        self.surf.fill(WHITE)
-        pygame.draw.circle(self.surf, GOLD, (10, 10), 10)
+        self.surf = pygame.image.load(".\Resources\coin.png").convert()
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
+        self.surf = pygame.transform.scale(self.surf, (20,20))
         self.rect = self.surf.get_rect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
 
     def place(self, x = 0, y = 0):
@@ -102,10 +96,10 @@ class Coin(pygame.sprite.Sprite):
         if x == 0: x = random.randint(margin, SCREEN_WIDTH - margin)
         if y == 0: y = random.randint(margin, SCREEN_HEIGHT - margin) 
         size = (x / 40) + 10
+        self.surf = pygame.image.load(".\Resources\coin.png").convert_alpha()        
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
         self.surf = pygame.transform.scale(self.surf, (size, size))
-        self.surf.fill(WHITE)
         self.rect.center = (x, y)
-        pygame.draw.circle(self.surf, GOLD, (size / 2, size / 2), size / 2)
 
     def collect(self):
         if player.alive:
@@ -120,8 +114,11 @@ class Enemy(pygame.sprite.Sprite):
         super(Enemy, self).__init__()
         self.size = random.randint(1, 3)
         self.speed = 6 - self.size
-        self.surf = pygame.Surface((10 * self.size, 5 * self.size))
-        self.surf.fill((0, 0, 0))
+        self.surf = pygame.image.load(".\Resources\missile.png").convert()
+        self.surf = pygame.transform.flip(self.surf, True, False)
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
+        height = self.size * 8
+        self.surf = pygame.transform.scale(self.surf, (height * 2.36,height))
         self.rect = self.surf.get_rect(
             center=(
                 random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
@@ -203,7 +200,7 @@ while running:
     enemies.update()
 
     # Fill the screen with white
-    screen.fill((255, 255, 255))
+    screen.fill((173,216,230))
     hud.blit_text()
 
     # Check if any enemies have collided with the player
